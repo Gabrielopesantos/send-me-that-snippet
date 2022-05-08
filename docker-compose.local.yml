@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+
+    postgresql:
+      image: postgres:14.2-alpine
+      container_name: postgesql
+      hostname: postgesql
+      ports:
+        - "5432:5432"
+      restart: always
+      environment:
+        POSTGRES_USER: gabriel
+        POSTGRES_PASSWORD: gabriel
+        POSTGRES_DB: main
+      volumes:
+        - db-data:/var/lib/postgresql/data
+
+    adminer:
+      image: adminer
+      restart: always
+      ports:
+        - "8080:8080"
+
+#    pgadminer4:
+#      container_name: pgadminer4
+#      image: dpage/pgadmin4
+#      restart: always
+#      environment:
+#        PGADMIN_DEFAULT_EMAIL: email@email.com
+#        PGADMIN_DEFAULT_PASSWORD: email
+#      ports:
+#        - "80:80"
+
+volumes:
+  db-data:

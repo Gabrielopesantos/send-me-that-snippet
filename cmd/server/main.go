@@ -6,11 +6,23 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 	"log"
 	"time"
 )
 
 func main() {
+	pgDsn := "postgres://gabriel:gabriel@localhost:5432/main"
+	db, err := gorm.Open(postgres.Open(pgDsn), &gorm.Config{})
+	if err != nil {
+		log.Fatal("failed to connect database")
+	}
+	err = db.AutoMigrate(&model.Paste{})
+	if err != nil {
+		log.Fatal("Failed to auto migrate schema")
+	}
+
 	srv := fiber.New()
 	srv.Use(logger.New(logger.Config{
 		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
@@ -31,13 +43,9 @@ func main() {
 		//Storage: myCustomStorage{}
 	}))
 
-	srv.Get("/", func(ctx *fiber.Ctx) error {
-		ctx.Send([]byte("All good"))
-		ctx.Status(fiber.StatusAccepted)
-		return nil
-	})
+	pastesGroup := srv.Group("/paste")
 
-	srv.Post("/new", func(ctx *fiber.Ctx) error {
+	pastesGroup.Post("/", func(ctx *fiber.Ctx) error {
 		var err error
 		val := validator.New()
 		paste := model.Paste{}
@@ -53,8 +61,20 @@ func main() {
 			return err
 		}
 
+		// ?
+		db.Create(&paste)
+
 		return ctx.JSON(paste)
 	})
 
-	srv.Listen(":8080")
+	pastesGroup.Get("/:pId", func(ctx *fiber.Ctx) error {
+		pId := ctx.Params("pId")
+
+		paste := model.Paste{}
+		db.First(&paste, "id  = ?", pId)
+
+		return ctx.JSON(paste)
+	})
+
+	srv.Listen(":8888")
 }

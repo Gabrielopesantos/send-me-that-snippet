@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type Paste struct {
 	Id         string        `json:"id,omitempty"`
