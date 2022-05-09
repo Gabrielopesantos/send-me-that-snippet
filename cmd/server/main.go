@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gabrielopesantos/smts/config"
+	"github.com/gabrielopesantos/smts/internal/middleware"
 	"github.com/gabrielopesantos/smts/internal/model"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -19,7 +20,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load config file. Error: %v", err)
 	}
-	_, err = config.ParseConfig(cfgFile)
+	cfg, err := config.ParseConfig(cfgFile)
 	if err != nil {
 		log.Fatalf("failed to parse config file. Error: %v", err)
 	}
@@ -87,14 +88,26 @@ func main() {
 		return ctx.JSON(paste)
 	})
 
-	pastesGroup.Delete("/:pId", func(ctx *fiber.Ctx) error {
-		pId := ctx.Params("pId")
+	mm := middleware.NewMiddlewareManager(cfg)
 
-		paste := model.Paste{}
-		db.Delete(&paste, "id = ?", pId)
+	pastesGroup.Delete("/:pId", mm.BasicAuthMiddleware(
+		func(ctx *fiber.Ctx) error {
+			pId := ctx.Params("pId")
 
-		return ctx.JSON(paste)
-	})
+			paste := model.Paste{}
+			db.Delete(&paste, "id = ?", pId)
+
+			return ctx.JSON(paste)
+		}))
+
+	// pastesGroup.Delete("/:pId", func(ctx *fiber.Ctx) error {
+	// 	pId := ctx.Params("pId")
+
+	// 	paste := model.Paste{}
+	// 	db.Delete(&paste, "id = ?", pId)
+
+	// 	return ctx.JSON(paste)
+	// })
 
 	srv.Listen(":8888")
 }
