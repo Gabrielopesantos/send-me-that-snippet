@@ -1,6 +1,10 @@
 package main
 
 import (
+	"log"
+	"time"
+
+	"github.com/gabrielopesantos/smts/config"
 	"github.com/gabrielopesantos/smts/internal/model"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
@@ -8,11 +12,18 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"log"
-	"time"
 )
 
 func main() {
+	cfgFile, err := config.LoadConfig("./config/config-dev.yaml")
+	if err != nil {
+		log.Fatalf("failed to load config file. Error: %v", err)
+	}
+	_, err = config.ParseConfig(cfgFile)
+	if err != nil {
+		log.Fatalf("failed to parse config file. Error: %v", err)
+	}
+
 	pgDsn := "postgres://gabriel:gabriel@localhost:5432/main"
 	db, err := gorm.Open(postgres.Open(pgDsn), &gorm.Config{})
 	if err != nil {
@@ -72,6 +83,15 @@ func main() {
 
 		paste := model.Paste{}
 		db.First(&paste, "id  = ?", pId)
+
+		return ctx.JSON(paste)
+	})
+
+	pastesGroup.Delete("/:pId", func(ctx *fiber.Ctx) error {
+		pId := ctx.Params("pId")
+
+		paste := model.Paste{}
+		db.Delete(&paste, "id = ?", pId)
 
 		return ctx.JSON(paste)
 	})
