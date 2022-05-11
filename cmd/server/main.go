@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/gabrielopesantos/smts/pkg/database"
 	"log"
 	"time"
 
@@ -11,11 +12,10 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/logger"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 func main() {
+	// Load and parse config
 	cfgFile, err := config.LoadConfig("./config/config-dev.yaml")
 	if err != nil {
 		log.Fatalf("failed to load config file. Error: %v", err)
@@ -25,8 +25,8 @@ func main() {
 		log.Fatalf("failed to parse config file. Error: %v", err)
 	}
 
-	pgDsn := "postgres://gabriel:gabriel@localhost:5432/main"
-	db, err := gorm.Open(postgres.Open(pgDsn), &gorm.Config{})
+	// Init database connection and auto migrate
+	db, err := database.NewGormDB(cfg)
 	if err != nil {
 		log.Fatal("failed to connect database")
 	}

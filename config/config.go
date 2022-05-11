@@ -4,11 +4,20 @@ import "github.com/spf13/viper"
 
 type Config struct {
 	ServerConfig serverConfig
+	DBConfig     dbConfig
 }
 
 type serverConfig struct {
 	BasicAuthUser     string
 	BasicAuthPassword string
+}
+
+type dbConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Database string
 }
 
 func LoadConfig(filepath string) (*viper.Viper, error) {
