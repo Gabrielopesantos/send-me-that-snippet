@@ -1,17 +1,11 @@
 package main
 
 import (
+	"github.com/gabrielopesantos/smts/config"
+	"github.com/gabrielopesantos/smts/internal/model"
+	"github.com/gabrielopesantos/smts/internal/server"
 	"github.com/gabrielopesantos/smts/pkg/database"
 	"log"
-	"time"
-
-	"github.com/gabrielopesantos/smts/config"
-	"github.com/gabrielopesantos/smts/internal/middleware"
-	"github.com/gabrielopesantos/smts/internal/model"
-	"github.com/go-playground/validator/v10"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/gofiber/fiber/v2/middleware/logger"
 )
 
 func main() {
@@ -35,79 +29,82 @@ func main() {
 		log.Fatal("Failed to auto migrate schema")
 	}
 
-	srv := fiber.New()
-	srv.Use(logger.New(logger.Config{
-		Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
-	}))
-	srv.Use(limiter.New(limiter.Config{
-		Next: func(c *fiber.Ctx) bool {
-			return c.IP() == "127.0.0.1"
-		},
-		Max:        10,
-		Expiration: 1 * time.Hour,
-		KeyGenerator: func(c *fiber.Ctx) string {
-			return c.Get("x-forwarded-for")
-		},
-		LimitReached: func(c *fiber.Ctx) error {
-			c.Status(fiber.StatusTooManyRequests)
-			return c.Send([]byte("Rate limit finished"))
-		},
-		//Storage: myCustomStorage{}
-	}))
+	srv := server.New(db, cfg)
+	srv.Start()
 
-	pastesGroup := srv.Group("/paste")
-
-	pastesGroup.Post("/", func(ctx *fiber.Ctx) error {
-		var err error
-		val := validator.New()
-		paste := model.Paste{}
-		err = ctx.BodyParser(&paste)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
-
-		err = val.Struct(&paste)
-		if err != nil {
-			log.Print(err)
-			return err
-		}
-
-		// ?
-		db.Create(&paste)
-
-		return ctx.JSON(paste)
-	})
-
-	pastesGroup.Get("/:pId", func(ctx *fiber.Ctx) error {
-		pId := ctx.Params("pId")
-
-		paste := model.Paste{}
-		db.First(&paste, "id  = ?", pId)
-
-		return ctx.JSON(paste)
-	})
-
-	mm := middleware.NewMiddlewareManager(cfg)
-
-	pastesGroup.Delete("/:pId", mm.BasicAuthMiddleware(
-		func(ctx *fiber.Ctx) error {
-			pId := ctx.Params("pId")
-
-			paste := model.Paste{}
-			db.Delete(&paste, "id = ?", pId)
-
-			return ctx.JSON(paste)
-		}))
-
-	// pastesGroup.Delete("/:pId", func(ctx *fiber.Ctx) error {
-	// 	pId := ctx.Params("pId")
-
-	// 	paste := model.Paste{}
-	// 	db.Delete(&paste, "id = ?", pId)
-
-	// 	return ctx.JSON(paste)
-	// })
-
-	srv.Listen(":8888")
+	//app := fiber.New()
+	//app.Use(logger.New(logger.Config{
+	//	Format: "[${ip}]:${port} ${status} - ${method} ${path}\n",
+	//}))
+	//app.Use(limiter.New(limiter.Config{
+	//	Next: func(c *fiber.Ctx) bool {
+	//		return c.IP() == "127.0.0.1"
+	//	},
+	//	Max:        10,
+	//	Expiration: 1 * time.Hour,
+	//	KeyGenerator: func(c *fiber.Ctx) string {
+	//		return c.Get("x-forwarded-for")
+	//	},
+	//	LimitReached: func(c *fiber.Ctx) error {
+	//		c.Status(fiber.StatusTooManyRequests)
+	//		return c.Send([]byte("Rate limit finished"))
+	//	},
+	//	//Storage: myCustomStorage{}
+	//}))
+	//
+	//pastesGroup := app.Group("/paste")
+	//
+	//pastesGroup.Post("/", func(ctx *fiber.Ctx) error {
+	//	var err error
+	//	val := validator.New()
+	//	paste := model.Paste{}
+	//	err = ctx.BodyParser(&paste)
+	//	if err != nil {
+	//		log.Print(err)
+	//		return err
+	//	}
+	//
+	//	err = val.Struct(&paste)
+	//	if err != nil {
+	//		log.Print(err)
+	//		return err
+	//	}
+	//
+	//	// ?
+	//	db.Create(&paste)
+	//
+	//	return ctx.JSON(paste)
+	//})
+	//
+	//pastesGroup.Get("/:pId", func(ctx *fiber.Ctx) error {
+	//	pId := ctx.Params("pId")
+	//
+	//	paste := model.Paste{}
+	//	db.First(&paste, "id  = ?", pId)
+	//
+	//	return ctx.JSON(paste)
+	//})
+	//
+	//mm := middleware.NewMiddlewareManager(cfg)
+	//
+	//pastesGroup.Delete("/:pId", mm.BasicAuthMiddleware(
+	//	func(ctx *fiber.Ctx) error {
+	//		pId := ctx.Params("pId")
+	//
+	//		paste := model.Paste{}
+	//		db.Delete(&paste, "id = ?", pId)
+	//
+	//		return ctx.JSON(paste)
+	//	}))
+	//
+	//// pastesGroup.Delete("/:pId", func(ctx *fiber.Ctx) error {
+	//// 	pId := ctx.Params("pId")
+	//
+	//// 	paste := model.Paste{}
+	//// 	db.Delete(&paste, "id = ?", pId)
+	//
+	//// 	return ctx.JSON(paste)
+	//// })
+	//
+	//app.Listen(":8888")
 }
