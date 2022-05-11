@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"github.com/gabrielopesantos/smts/config"
+	"github.com/gabrielopesantos/smts/internal/middleware"
 	"github.com/gabrielopesantos/smts/internal/paste"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
@@ -34,10 +35,11 @@ func (s *Server) Start() {
 }
 
 func (s *Server) mapRoutes() {
+	mm := middleware.NewMiddlewareManager(s.cfg)
 	v1Group := s.app.Group("/api/v1")
 
 	// Paste
 	pasteGroup := v1Group.Group("/paste")
 	pasteHandlers := paste.NewHandlers(s.dbConn, s.cfg)
-	paste.MapRoutes(pasteGroup, pasteHandlers)
+	paste.MapRoutes(pasteGroup, pasteHandlers, mm)
 }

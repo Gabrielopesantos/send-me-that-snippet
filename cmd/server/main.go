@@ -29,6 +29,7 @@ func main() {
 		log.Fatal("Failed to auto migrate schema")
 	}
 
+	// Init and start server
 	srv := server.New(db, cfg)
 	srv.Start()
 
