@@ -7,7 +7,7 @@ import (
 )
 
 func MapRoutes(router fiber.Router, handlers *pasteHandlers, mm *middleware.MiddlewareManager) {
-	router.Use(logger.New()) // Make a better logger
+	router.Use(logger.New())
 	router.Get("/:pId", handlers.Get())
 	router.Post("/", handlers.Insert())
 	router.Delete("/:pId", mm.BasicAuthMiddleware(handlers.Delete()))

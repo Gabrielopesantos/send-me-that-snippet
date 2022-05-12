@@ -6,9 +6,13 @@ import (
 	"github.com/gabrielopesantos/smts/internal/server"
 	"github.com/gabrielopesantos/smts/pkg/database"
 	"log"
+	"math/rand"
+	"time"
 )
 
 func main() {
+	// ?
+	rand.Seed(time.Now().UnixNano())
 	// Load and parse config
 	cfgFile, err := config.LoadConfig("./config/config-dev.yaml")
 	if err != nil {

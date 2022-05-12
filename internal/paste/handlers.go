@@ -3,10 +3,10 @@ package paste
 import (
 	"github.com/gabrielopesantos/smts/config"
 	"github.com/gabrielopesantos/smts/internal/model"
+	utls "github.com/gabrielopesantos/smts/pkg/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
-	"log"
 )
 
 type pasteHandlers struct {
@@ -28,17 +28,23 @@ func (h *pasteHandlers) Insert() fiber.Handler {
 		paste := model.Paste{}
 		err = ctx.BodyParser(&paste)
 		if err != nil {
-			log.Print(err)
-			return err
+			ctx.Response().SetBodyString("Failed to parse request body")
+			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
 		err = val.Struct(&paste)
 		if err != nil {
-			log.Print(err)
-			return err
+			ctx.Response().SetBodyString("Invalid request body")
+			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
-		h.dbConn.Create(&paste)
+		paste.Id = utls.RandSeq(12)
+
+		err = h.dbConn.Create(&paste).Error
+		if err != nil {
+			ctx.Response().SetBodyString("Failed to register paste")
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
 
 		return ctx.JSON(paste)
 	}
