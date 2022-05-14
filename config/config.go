@@ -8,10 +8,11 @@ type Config struct {
 }
 
 type serverConfig struct {
-	Host              string
-	Port              string
-	BasicAuthUser     string
-	BasicAuthPassword string
+	Host                    string
+	Port                    string
+	BasicAuthUser           string
+	BasicAuthPassword       string
+	CreateDashboardEndpoint bool
 }
 
 type dbConfig struct {

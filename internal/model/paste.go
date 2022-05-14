@@ -11,5 +11,5 @@ type Paste struct {
 	Language   string        `json:"language"`
 	CreatedAt  time.Time     `json:"created_at,omitempty" validate:"isdefault" gorm:"autoCreateTime"`
 	ExpiresIn  time.Duration `json:"expires_in"`
-	Expired    bool
+	Expired    bool          `json:"expired" validate:"isdefault"`
 }

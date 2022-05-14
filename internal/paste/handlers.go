@@ -51,10 +51,14 @@ func (h *pasteHandlers) Insert() fiber.Handler {
 }
 func (h *pasteHandlers) Get() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
-		pId := ctx.Params("pId")
+		pId := ctx.Params("pId", "")
 
 		paste := model.Paste{}
-		h.dbConn.First(&paste, "id  = ?", pId)
+		err := h.dbConn.First(&paste, "id  = ?", pId).Error
+		if err != nil {
+			ctx.Response().SetBodyString("Not found")
+			return ctx.SendStatus(fiber.StatusNotFound)
+		}
 
 		return ctx.JSON(paste)
 	}
@@ -65,7 +69,11 @@ func (h *pasteHandlers) Delete() fiber.Handler {
 		pId := ctx.Params("pId")
 
 		paste := model.Paste{}
-		h.dbConn.Delete(&paste, "id = ?", pId)
+		err := h.dbConn.Delete(&paste, "id = ?", pId)
+		if err != nil {
+			ctx.Response().SetBodyString("Not found")
+			return ctx.SendStatus(fiber.StatusNotFound)
+		}
 
 		return ctx.JSON(paste)
 	}

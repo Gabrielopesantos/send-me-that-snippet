@@ -6,6 +6,7 @@ import (
 	"github.com/gabrielopesantos/smts/internal/middleware"
 	"github.com/gabrielopesantos/smts/internal/paste"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"gorm.io/gorm"
 	"log"
 )
@@ -35,7 +36,13 @@ func (s *Server) Start() {
 }
 
 func (s *Server) mapRoutes() {
+	// This should be split
 	mm := middleware.NewMiddlewareManager(s.cfg)
+	if s.cfg.ServerConfig.CreateDashboardEndpoint {
+		s.app.Get("/dashboard", mm.BasicAuthMiddleware(monitor.New()))
+	}
+
+	// V1
 	v1Group := s.app.Group("/api/v1")
 
 	// Paste

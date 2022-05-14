@@ -3,6 +3,7 @@ serverConfig:
   port: 5000
   basicAuthUser: gabriel
   basicAuthPassword: gabriel
+  createDashboardEndpoint: true
 
 dbConfig:
   user: gabriel
