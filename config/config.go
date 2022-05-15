@@ -3,11 +3,11 @@ package config
 import "github.com/spf13/viper"
 
 type Config struct {
-	ServerConfig serverConfig
-	DBConfig     dbConfig
+	ServerConfig ServerConfig
+	DBConfig     DBConfig
 }
 
-type serverConfig struct {
+type ServerConfig struct {
 	Host                    string
 	Port                    string
 	BasicAuthUser           string
@@ -15,7 +15,7 @@ type serverConfig struct {
 	CreateDashboardEndpoint bool
 }
 
-type dbConfig struct {
+type DBConfig struct {
 	Host     string
 	Port     string
 	User     string

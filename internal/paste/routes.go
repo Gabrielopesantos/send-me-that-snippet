@@ -11,4 +11,5 @@ func MapRoutes(router fiber.Router, handlers *pasteHandlers, mm *middleware.Mana
 	router.Get("/:pId", handlers.Get())
 	router.Post("/", handlers.Insert())
 	router.Delete("/:pId", mm.BasicAuthMiddleware(handlers.Delete()))
+	router.Put("/:pId", mm.BasicAuthMiddleware(handlers.Update()))
 }

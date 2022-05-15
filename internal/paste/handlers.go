@@ -1,6 +1,7 @@
 package paste
 
 import (
+	"fmt"
 	"github.com/gabrielopesantos/smts/config"
 	"github.com/gabrielopesantos/smts/internal/model"
 	utls "github.com/gabrielopesantos/smts/pkg/utils"
@@ -19,6 +20,32 @@ func NewHandlers(dbConn *gorm.DB, cfg *config.Config) *pasteHandlers {
 	return &pasteHandlers{
 		cfg:    cfg,
 		dbConn: dbConn,
+	}
+}
+
+func (h *pasteHandlers) Filter() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+
+		filter := model.Paste{}
+		err := ctx.QueryParser(&filter)
+		log.Printf("%+v", filter)
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+
+		var results []model.Paste
+		// Breaks this functions
+		err = h.dbConn.Where(&filter, "expired").Find(&results).Error
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		err = ctx.JSON(results)
+		if err != nil {
+			log.Printf("%v", err)
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }
 
@@ -65,30 +92,6 @@ func (h *pasteHandlers) Get() fiber.Handler {
 	}
 }
 
-func (h *pasteHandlers) Filter() fiber.Handler {
-	return func(ctx *fiber.Ctx) error {
-
-		filter := model.Paste{}
-		err := ctx.QueryParser(&filter)
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusBadRequest)
-		}
-
-		var results []model.Paste
-		err = h.dbConn.Find(&results, &filter).Error
-		if err != nil {
-			return ctx.SendStatus(fiber.StatusInternalServerError)
-		}
-
-		err = ctx.JSON(results)
-		if err != nil {
-			log.Printf("%v", err)
-			return ctx.SendStatus(fiber.StatusInternalServerError)
-		}
-		return ctx.SendStatus(fiber.StatusOK)
-	}
-}
-
 func (h *pasteHandlers) Delete() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		pId := ctx.Params("pId")
@@ -101,5 +104,27 @@ func (h *pasteHandlers) Delete() fiber.Handler {
 		}
 
 		return ctx.JSON(paste)
+	}
+}
+
+func (h *pasteHandlers) Update() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+		pId := ctx.Params("pId")
+
+		paste := model.Paste{}
+		err := ctx.BodyParser(&paste)
+		fmt.Printf("Something - %s | %+v\n", pId, paste)
+		if err != nil {
+			ctx.Response().SetBodyString("Nothing to update")
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+
+		err = h.dbConn.Where("id = ?", pId).Updates(paste).Error
+		if err != nil {
+			ctx.Response().SetBodyString("Failed to update item")
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }
