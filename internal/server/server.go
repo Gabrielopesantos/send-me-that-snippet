@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"gorm.io/gorm"
 	"log"
+	"time"
 )
 
 type Server struct {
@@ -46,7 +47,21 @@ func (s *Server) mapRoutes() {
 	v1Group := s.app.Group("/api/v1")
 
 	// Paste
-	pasteGroup := v1Group.Group("/paste")
+	go func() {
+		expirePastes()
+	}()
+	pasteGroup := v1Group.Group("/pastes")
 	pasteHandlers := paste.NewHandlers(s.dbConn, s.cfg)
 	paste.MapRoutes(pasteGroup, pasteHandlers, mm)
+}
+
+func expirePastes() {
+	t := time.NewTicker(5 * time.Second) // Time in minutes defined in config
+	for {
+		select {
+		case <-t.C:
+			fmt.Println("Hello world")
+		default:
+		}
+	}
 }

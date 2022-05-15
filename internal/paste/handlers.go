@@ -7,6 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/gorm"
+	"log"
 )
 
 type pasteHandlers struct {
@@ -61,6 +62,30 @@ func (h *pasteHandlers) Get() fiber.Handler {
 		}
 
 		return ctx.JSON(paste)
+	}
+}
+
+func (h *pasteHandlers) Filter() fiber.Handler {
+	return func(ctx *fiber.Ctx) error {
+
+		filter := model.Paste{}
+		err := ctx.QueryParser(&filter)
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusBadRequest)
+		}
+
+		var results []model.Paste
+		err = h.dbConn.Find(&results, &filter).Error
+		if err != nil {
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+
+		err = ctx.JSON(results)
+		if err != nil {
+			log.Printf("%v", err)
+			return ctx.SendStatus(fiber.StatusInternalServerError)
+		}
+		return ctx.SendStatus(fiber.StatusOK)
 	}
 }
 
