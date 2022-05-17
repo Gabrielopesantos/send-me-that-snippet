@@ -4,6 +4,7 @@ serverConfig:
   basicAuthUser: gabriel
   basicAuthPassword: gabriel
   createDashboardEndpoint: true
+  deletePastesIntervalMins: 15
 
 dbConfig:
   user: gabriel

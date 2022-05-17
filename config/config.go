@@ -1,6 +1,9 @@
 package config
 
-import "github.com/spf13/viper"
+import (
+	"github.com/spf13/viper"
+	"time"
+)
 
 type Config struct {
 	ServerConfig ServerConfig
@@ -8,11 +11,12 @@ type Config struct {
 }
 
 type ServerConfig struct {
-	Host                    string
-	Port                    string
-	BasicAuthUser           string
-	BasicAuthPassword       string
-	CreateDashboardEndpoint bool
+	Host                     string
+	Port                     string
+	BasicAuthUser            string
+	BasicAuthPassword        string
+	CreateDashboardEndpoint  bool
+	DeletePastesIntervalMins time.Duration
 }
 
 type DBConfig struct {

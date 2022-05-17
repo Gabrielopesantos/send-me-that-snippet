@@ -8,6 +8,7 @@ import (
 	"github.com/gabrielopesantos/smts/internal/middleware"
 	"github.com/gabrielopesantos/smts/internal/model"
 	"github.com/gabrielopesantos/smts/internal/paste"
+	"github.com/gabrielopesantos/smts/pkg/logger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"gorm.io/gorm"
@@ -21,13 +22,15 @@ import (
 type Server struct {
 	app    *fiber.App
 	dbConn *gorm.DB
+	logger *logger.Logger
 	cfg    *config.Config
 }
 
-func New(dbConn *gorm.DB, cfg *config.Config) *Server {
+func New(dbConn *gorm.DB, logger *logger.Logger, cfg *config.Config) *Server {
 	return &Server{
 		app:    fiber.New(),
 		dbConn: dbConn,
+		logger: logger,
 		cfg:    cfg,
 	}
 }
@@ -62,7 +65,8 @@ func (s *Server) mapRoutes() {
 }
 
 func startExpirePastesProcess(srvCfg config.ServerConfig) {
-	t := time.NewTicker(10 * time.Minute) // Time in minutes defined in config
+	// Need a way to gracefully stop this
+	t := time.NewTicker(srvCfg.DeletePastesIntervalMins * time.Minute)
 	client := http.Client{Timeout: 10 * time.Second}
 	defer client.CloseIdleConnections()
 	for {
@@ -74,13 +78,17 @@ func startExpirePastesProcess(srvCfg config.ServerConfig) {
 	}
 }
 
+// Put everything below this comment into a separate file (and test)
 func expirePastes(client *http.Client, srvCfg config.ServerConfig) {
 	// getAllNonExpiredPastes
 	pastes, _ := getNonExpiredPastes(client, srvCfg)
+	log.Printf("Len pastes: %d", len(pastes))
 	// Check which notes should be expired / Check if pastes is empty
 	pastesToExpire := getPastesToExpire(pastes)
 	// Expire them
-	updatePastes(client, pastesToExpire, srvCfg)
+	if len(pastesToExpire) > 0 {
+		updatePastes(client, pastesToExpire, srvCfg)
+	}
 }
 
 func getNonExpiredPastes(client *http.Client, srvCfg config.ServerConfig) ([]model.Paste, error) {
