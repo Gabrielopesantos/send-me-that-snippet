@@ -36,7 +36,8 @@ func main() {
 	}
 
 	// Init logger
-	loggr := logger.New(os.Stdout, logger.Info) // Log level should be passed has a cfg var
+	loggr := logger.New(os.Stdout, logger.Info, logger.Console) // Log level should be passed has a cfg var
+	loggr.Info("Hello world", nil)
 
 	// Init and start server
 	srv := server.New(db, loggr, cfg)

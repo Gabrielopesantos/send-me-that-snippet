@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+type logMessageContent struct {
+	Level      string            `json:"level"`
+	Time       string            `json:"time"`
+	Message    string            `json:"message"`
+	Properties map[string]string `json:"properties,omitempty"`
+	Trace      string            `json:"trace"`
+}
+
 type Level int8
 
 // Log levels
@@ -30,14 +38,49 @@ func (l Level) String() string {
 	}
 }
 
-type Logger struct {
-	out      io.Writer
-	minLevel Level
-	mu       sync.Mutex
+type outputEncoding int8
+
+const (
+	Json outputEncoding = iota
+	Console
+)
+
+func encodeJson(data *logMessageContent) []byte {
+	var line []byte
+	line, err := json.Marshal(data)
+	if err != nil {
+		line = []byte(Error.String() + ": unable to marshal log message:" + err.Error())
+	}
+
+	return line
 }
 
-func New(out io.Writer, minLevel Level) *Logger {
-	return &Logger{out: out, minLevel: minLevel}
+func encodeConsole(data *logMessageContent) []byte {
+	// In progress
+	var line string
+	line += data.Level + " | " + data.Time + " | " + data.Message
+
+	return []byte(line)
+}
+
+var encodingFuncsMap = map[outputEncoding]func(*logMessageContent) []byte{
+	Json:    encodeJson,
+	Console: encodeConsole,
+}
+
+type Logger struct {
+	out        io.Writer
+	minLevel   Level
+	encodeFunc func(data *logMessageContent) []byte
+	mu         sync.Mutex
+}
+
+func New(out io.Writer, minLevel Level, encoding outputEncoding) *Logger {
+	return &Logger{
+		out:        out,
+		minLevel:   minLevel,
+		encodeFunc: encodingFuncsMap[encoding],
+	}
 }
 
 func (l *Logger) print(level Level, message string, properties map[string]string) (int, error) {
@@ -45,13 +88,7 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 		return 0, nil
 	}
 
-	aux := struct {
-		Level      string            `json:"level"`
-		Time       string            `json:"time"`
-		Message    string            `json:"message"`
-		Properties map[string]string `json:"properties,omitempty"`
-		Trace      string            `json:"trace"`
-	}{
+	logMsg := logMessageContent{
 		Level:      level.String(),
 		Time:       time.Now().UTC().Format(time.RFC3339),
 		Message:    message,
@@ -59,19 +96,15 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 	}
 
 	if level >= Error {
-		aux.Trace = string(debug.Stack())
+		logMsg.Trace = string(debug.Stack())
 	}
 
-	var line []byte
-	line, err := json.Marshal(aux)
-	if err != nil {
-		line = []byte(Error.String() + ": unable to marshal log message:" + err.Error())
-	}
+	log := l.encodeFunc(&logMsg)
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	return l.out.Write(append(line, '\n'))
+	return l.out.Write(append(log, '\n'))
 }
 
 // Might not be needed
