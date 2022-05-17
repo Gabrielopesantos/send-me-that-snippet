@@ -17,10 +17,50 @@ services:
         - db-data:/var/lib/postgresql/data
 
     adminer:
-      image: adminer
+      image: adminer:4.8.1
       restart: always
       ports:
         - "8080:8080"
+#
+#    loki:
+#      image: grafana/loki:1.4.1
+#      restart: always
+#
+#    fluentd:
+#      image: grafana/fluent-plugin-loki:master
+#      command:
+#        - "fluentd"
+#        - "-v"
+#        - "-p"
+#        - "/fluentd/plugins"
+#      environment:
+#        LOKI_URL: http://loki:3100
+#        LOKI_USERNAME:
+#        LOKI_PASSWORD:
+#      deploy:
+#        mode: global
+#      configs:
+#        - source: loki_config
+#          target: /fluentd/etc/loki/loki.conf
+#      volumes:
+#        - fluentd-logs:/var/log
+##         Needed for journald log ingestion:
+##        - /etc/machine-id:/etc/machine-id
+##        - /dev/log:/dev/log
+##        - /var/run/systemd/journal/:/var/run/systemd/journal/
+#      logging:
+#        options:
+#          tag: infra.monitoring
+#
+#    grafana:
+#      image: grafana/grafana:8.2.6
+#      restart: always
+#      ports:
+#        - "3000:3000"
+#      logging:
+#        driver: fluentd
+#        options:
+#          fluentd-address: fluentd:24224
 
 #    pgadminer4:
 #      container_name: pgadminer4
@@ -34,3 +74,4 @@ services:
 
 volumes:
   db-data:
+  fluentd-logs:

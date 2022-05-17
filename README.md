@@ -1,9 +1,8 @@
 # Send me that snippet
-Website to host (temporarly) and share textual information
+Website to host (temporarily) and share textual information
 
-## Ideas
-- ?
-
+## Description
+- TODO
 
 ### License
 MIT
