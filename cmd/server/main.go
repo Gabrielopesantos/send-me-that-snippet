@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gabrielopesantos/smts/config"
+	"github.com/gabrielopesantos/smts/internal/middleware"
 	"github.com/gabrielopesantos/smts/internal/model"
 	"github.com/gabrielopesantos/smts/internal/server"
 	"github.com/gabrielopesantos/smts/pkg/database"
@@ -13,7 +14,7 @@ import (
 )
 
 func main() {
-	// ?
+	// Seed to generation of strings
 	rand.Seed(time.Now().UnixNano())
 	// Load and parse config
 	cfgFile, err := config.LoadConfig("./config/config-dev.yaml")
@@ -36,10 +37,12 @@ func main() {
 	}
 
 	// Init logger
-	loggr := logger.New(os.Stdout, logger.Info, logger.Console) // Log level should be passed has a cfg var
-	loggr.Info("Hello world", nil)
+	loggr := logger.New(os.Stdout, logger.Info, logger.Console)
+
+	// Create middleware manager ?
+	middlewareManager := middleware.NewMiddlewareManager(cfg)
 
 	// Init and start server
-	srv := server.New(db, loggr, cfg)
+	srv := server.New(db, loggr, middlewareManager, cfg)
 	srv.Start()
 }

@@ -115,8 +115,8 @@ func (h *pasteHandlers) Update() fiber.Handler {
 		err := ctx.BodyParser(&paste)
 		fmt.Printf("Something - %s | %+v\n", pId, paste)
 		if err != nil {
-			ctx.Response().SetBodyString("Nothing to update")
-			return ctx.SendStatus(fiber.StatusBadRequest)
+
+			return ctx.Status(fiber.StatusBadRequest).SendString("Nothing to update")
 		}
 
 		err = h.dbConn.Where("id = ?", pId).Updates(paste).Error

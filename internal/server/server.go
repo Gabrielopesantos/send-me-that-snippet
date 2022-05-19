@@ -1,21 +1,18 @@
 package server
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/gabrielopesantos/smts/config"
 	"github.com/gabrielopesantos/smts/internal/middleware"
-	"github.com/gabrielopesantos/smts/internal/model"
 	"github.com/gabrielopesantos/smts/internal/paste"
 	"github.com/gabrielopesantos/smts/pkg/logger"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/cors"
+	"github.com/gofiber/fiber/v2/middleware/csrf"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 	"github.com/gofiber/fiber/v2/middleware/monitor"
 	"gorm.io/gorm"
-	"io"
 	"log"
-	"net/http"
-	"net/url"
 	"time"
 )
 
@@ -23,14 +20,16 @@ type Server struct {
 	app    *fiber.App
 	dbConn *gorm.DB
 	logger *logger.Logger
+	mm     *middleware.Manager
 	cfg    *config.Config
 }
 
-func New(dbConn *gorm.DB, logger *logger.Logger, cfg *config.Config) *Server {
+func New(dbConn *gorm.DB, logger *logger.Logger, mm *middleware.Manager, cfg *config.Config) *Server {
 	return &Server{
 		app:    fiber.New(),
 		dbConn: dbConn,
 		logger: logger,
+		mm:     mm,
 		cfg:    cfg,
 	}
 }
@@ -45,94 +44,35 @@ func (s *Server) Start() {
 	}
 }
 
-func (s *Server) mapRoutes() {
-	// This should be split
-	mm := middleware.NewMiddlewareManager(s.cfg)
+func (s *Server) setGlobalMiddleware() {
+	s.app.Use(csrf.New(), cors.New()) // ?
+
+	s.app.Use(limiter.New(limiter.Config{
+		Next: func(c *fiber.Ctx) bool {
+			return c.IP() == "127.0.0.1"
+		},
+		Max:        200,
+		Expiration: 30 * time.Minute,
+		LimitReached: func(c *fiber.Ctx) error {
+			return c.SendStatus(fiber.StatusTooManyRequests)
+		},
+	}))
+
 	if s.cfg.ServerConfig.CreateDashboardEndpoint {
-		s.app.Get("/dashboard", mm.BasicAuthMiddleware(monitor.New()))
+		s.app.Get("/dashboard", s.mm.BasicAuthMiddleware(monitor.New()))
 	}
 
+}
+
+func (s *Server) mapRoutes() {
 	// V1
 	v1Group := s.app.Group("/api/v1")
 
-	// Paste
+	// Pastes
 	go func() {
-		startExpirePastesProcess(s.cfg.ServerConfig)
+		paste.StartExpirePastesProcess(s.cfg.ServerConfig)
 	}()
 	pasteGroup := v1Group.Group("/pastes")
 	pasteHandlers := paste.NewHandlers(s.dbConn, s.cfg)
-	paste.MapRoutes(pasteGroup, pasteHandlers, mm)
-}
-
-func startExpirePastesProcess(srvCfg config.ServerConfig) {
-	// Need a way to gracefully stop this
-	t := time.NewTicker(srvCfg.DeletePastesIntervalMins * time.Minute)
-	client := http.Client{Timeout: 10 * time.Second}
-	defer client.CloseIdleConnections()
-	for {
-		select {
-		case <-t.C:
-			expirePastes(&client, srvCfg)
-		default:
-		}
-	}
-}
-
-// Put everything below this comment into a separate file (and test)
-func expirePastes(client *http.Client, srvCfg config.ServerConfig) {
-	// getAllNonExpiredPastes
-	pastes, _ := getNonExpiredPastes(client, srvCfg)
-	log.Printf("Len pastes: %d", len(pastes))
-	// Check which notes should be expired / Check if pastes is empty
-	pastesToExpire := getPastesToExpire(pastes)
-	// Expire them
-	if len(pastesToExpire) > 0 {
-		updatePastes(client, pastesToExpire, srvCfg)
-	}
-}
-
-func getNonExpiredPastes(client *http.Client, srvCfg config.ServerConfig) ([]model.Paste, error) {
-	u, _ := url.Parse("http://localhost:5000/api/v1/pastes/filter?expired=false")
-	req, err := http.NewRequest("GET", u.String(), nil)
-	req.SetBasicAuth(srvCfg.BasicAuthUser, srvCfg.BasicAuthPassword)
-	if err != nil { // Cannot fail here
-		log.Fatal(err)
-		return nil, err
-	}
-	resp, err := client.Do(req)
-	body, _ := io.ReadAll(resp.Body)
-	var pastes []model.Paste
-	err = json.Unmarshal(body, &pastes)
-	if err != nil {
-		return nil, err
-	}
-
-	return pastes, nil
-}
-
-func getPastesToExpire(pastes []model.Paste) []model.Paste {
-	var pastesToExpire []model.Paste
-	now := time.Now()
-	for _, p := range pastes {
-		if p.CreatedAt.Add(p.ExpiresIn * time.Minute).Before(now) {
-			pastesToExpire = append(pastesToExpire, p)
-		}
-	}
-	return pastesToExpire
-}
-
-func updatePastes(client *http.Client, pastes []model.Paste, srvCfg config.ServerConfig) {
-	u, _ := url.Parse("http://localhost:5000/api/v1/pastes")
-	body := model.Paste{Expired: true}
-	jsonBody, _ := json.Marshal(body)
-	for _, p := range pastes {
-		req, _ := http.NewRequest("PUT", u.String()+"/"+p.Id, bytes.NewReader(jsonBody))
-		req.Header.Set("Content-Type", "application/json")
-		req.SetBasicAuth(srvCfg.BasicAuthUser, srvCfg.BasicAuthPassword)
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Print(err)
-		}
-		log.Println(resp)
-	}
+	paste.MapRoutes(pasteGroup, pasteHandlers, s.mm)
 }

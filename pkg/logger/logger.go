@@ -2,6 +2,7 @@ package logger
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"runtime/debug"
 	"sync"
@@ -56,9 +57,11 @@ func encodeJson(data *logMessageContent) []byte {
 }
 
 func encodeConsole(data *logMessageContent) []byte {
-	// In progress
-	var line string
-	line += data.Level + " | " + data.Time + " | " + data.Message
+	// Properties are not needed for now
+	line := fmt.Sprintf("%s | %s | %s |", data.Level, data.Time, data.Message)
+	if data.Trace != "" {
+		line += " " + data.Trace
+	}
 
 	return []byte(line)
 }
