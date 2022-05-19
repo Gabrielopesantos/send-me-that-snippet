@@ -8,6 +8,7 @@ import (
 type Config struct {
 	ServerConfig ServerConfig
 	DBConfig     DBConfig
+	LoggerConfig LoggerConfig
 }
 
 type ServerConfig struct {
@@ -25,6 +26,12 @@ type DBConfig struct {
 	User     string
 	Password string
 	Database string
+}
+
+type LoggerConfig struct {
+	MinLevel    int
+	Encoding    string
+	PrintTraces bool
 }
 
 func LoadConfig(filepath string) (*viper.Viper, error) {

@@ -14,7 +14,7 @@ type logMessageContent struct {
 	Time       string            `json:"time"`
 	Message    string            `json:"message"`
 	Properties map[string]string `json:"properties,omitempty"`
-	Trace      string            `json:"trace"`
+	Trace      string            `json:"trace,omitempty"`
 }
 
 type Level int8
@@ -72,17 +72,19 @@ var encodingFuncsMap = map[outputEncoding]func(*logMessageContent) []byte{
 }
 
 type Logger struct {
-	out        io.Writer
-	minLevel   Level
-	encodeFunc func(data *logMessageContent) []byte
-	mu         sync.Mutex
+	out         io.Writer
+	minLevel    Level
+	encodeFunc  func(data *logMessageContent) []byte
+	printTraces bool
+	mu          sync.Mutex
 }
 
-func New(out io.Writer, minLevel Level, encoding outputEncoding) *Logger {
+func New(out io.Writer, minLevel Level, encoding outputEncoding, printTraces bool) *Logger {
 	return &Logger{
-		out:        out,
-		minLevel:   minLevel,
-		encodeFunc: encodingFuncsMap[encoding],
+		out:         out,
+		minLevel:    minLevel,
+		encodeFunc:  encodingFuncsMap[encoding],
+		printTraces: printTraces,
 	}
 }
 
@@ -98,8 +100,9 @@ func (l *Logger) print(level Level, message string, properties map[string]string
 		Properties: properties,
 	}
 
-	if level >= Error {
-		logMsg.Trace = string(debug.Stack())
+	if l.printTraces && level >= Error {
+		trace := string(debug.Stack())
+		logMsg.Trace = trace
 	}
 
 	log := l.encodeFunc(&logMsg)

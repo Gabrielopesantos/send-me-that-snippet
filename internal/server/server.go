@@ -73,6 +73,6 @@ func (s *Server) mapRoutes() {
 		paste.StartExpirePastesProcess(s.cfg.ServerConfig)
 	}()
 	pasteGroup := v1Group.Group("/pastes")
-	pasteHandlers := paste.NewHandlers(s.dbConn, s.cfg)
+	pasteHandlers := paste.NewHandlers(s.dbConn, s.logger, s.cfg)
 	paste.MapRoutes(pasteGroup, pasteHandlers, s.mm)
 }

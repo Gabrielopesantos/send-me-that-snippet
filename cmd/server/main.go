@@ -37,7 +37,7 @@ func main() {
 	}
 
 	// Init logger
-	loggr := logger.New(os.Stdout, logger.Info, logger.Console)
+	loggr := logger.New(os.Stdout, logger.Info, logger.Json, false)
 
 	// Create middleware manager ?
 	middlewareManager := middleware.NewMiddlewareManager(cfg)
