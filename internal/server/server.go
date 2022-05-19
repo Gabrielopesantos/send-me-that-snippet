@@ -6,6 +6,7 @@ import (
 	"github.com/gabrielopesantos/smts/internal/middleware"
 	"github.com/gabrielopesantos/smts/internal/paste"
 	"github.com/gabrielopesantos/smts/pkg/logger"
+	"github.com/gabrielopesantos/smts/pkg/sentryfiber"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/csrf"
@@ -46,7 +47,6 @@ func (s *Server) Start() {
 
 func (s *Server) setGlobalMiddleware() {
 	s.app.Use(csrf.New(), cors.New()) // ?
-
 	s.app.Use(limiter.New(limiter.Config{
 		Next: func(c *fiber.Ctx) bool {
 			return c.IP() == "127.0.0.1"
@@ -65,6 +65,7 @@ func (s *Server) setGlobalMiddleware() {
 }
 
 func (s *Server) mapRoutes() {
+	s.app.Use(sentryfiber.New(sentryfiber.Options{}))
 	// V1
 	v1Group := s.app.Group("/api/v1")
 
