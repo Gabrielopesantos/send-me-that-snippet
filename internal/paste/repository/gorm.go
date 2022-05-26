@@ -1,6 +1,7 @@
 package paste
 
 import (
+	"errors"
 	"github.com/gabrielopesantos/smts/internal/model"
 	"github.com/gabrielopesantos/smts/internal/paste"
 	"gorm.io/gorm"
@@ -22,11 +23,16 @@ func (gr *GormRepository) Insert(paste *model.Paste) error {
 	return gr.db.Create(&paste).Error
 }
 
+// Not returning deleted paste
 func (gr *GormRepository) Delete(pId string) (*model.Paste, error) {
 	p := model.Paste{}
-	err := gr.db.Delete(&p, "id = ?", pId).Error
+	//result := gr.db.Where("id = ?", pId).Delete(&p)
+	result := gr.db.Delete(&p, "id = ?", pId)
+	if result.RowsAffected == 0 {
+		return nil, errors.New("not found")
+	}
 
-	return &p, err
+	return &p, result.Error
 }
 
 func (gr *GormRepository) Get(pId string) (*model.Paste, error) {
@@ -42,7 +48,7 @@ func (gr *GormRepository) Update(pasteId string, paste *model.Paste) error {
 
 func (gr *GormRepository) Filter(filter *model.Paste) ([]model.Paste, error) {
 	var results []model.Paste
-	// This filter is currently boken due to the "expired" args
+	// This filter is currently broken due to the "expired" args
 	err := gr.db.Where(&filter, "expired").Find(&results).Error
 
 	return results, err

@@ -1,0 +1,7 @@
+version: 1
+packages:
+    - path: "./internal/paste/repository/"
+      name: "paste"
+      engine: "postgresql"
+      schema: "./internal/paste/repository/sqlc_schema.sql"
+      queries: "./internal/paste/repository/sqlc_queries.sql"

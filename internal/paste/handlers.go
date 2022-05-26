@@ -96,7 +96,7 @@ func (h *pasteHandlers) Delete() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		pId := ctx.Params("pId")
 
-		err, paste := h.dbConn.Delete(pId)
+		paste, err := h.dbConn.Delete(pId)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Get - %v", err), nil)
 			return ctx.Status(fiber.StatusNotFound).SendString("Not found")
