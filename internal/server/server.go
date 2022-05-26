@@ -5,6 +5,7 @@ import (
 	"github.com/gabrielopesantos/smts/config"
 	"github.com/gabrielopesantos/smts/internal/middleware"
 	"github.com/gabrielopesantos/smts/internal/paste"
+	pasteRepo "github.com/gabrielopesantos/smts/internal/paste/repository"
 	"github.com/gabrielopesantos/smts/pkg/logger"
 	"github.com/gabrielopesantos/smts/pkg/sentryfiber"
 	"github.com/gofiber/fiber/v2"
@@ -74,6 +75,7 @@ func (s *Server) mapRoutes() {
 		paste.StartExpirePastesProcess(s.cfg.ServerConfig)
 	}()
 	pasteGroup := v1Group.Group("/pastes")
-	pasteHandlers := paste.NewHandlers(s.dbConn, s.logger, s.cfg)
+	pasteRepository := pasteRepo.NewGormRepository(s.dbConn)
+	pasteHandlers := paste.NewHandlers(pasteRepository, s.logger, s.cfg)
 	paste.MapRoutes(pasteGroup, pasteHandlers, s.mm)
 }

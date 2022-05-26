@@ -22,18 +22,18 @@ func (gr *GormRepository) Insert(paste *model.Paste) error {
 	return gr.db.Create(&paste).Error
 }
 
-func (gr *GormRepository) Delete(pasteId string) (*model.Paste, error) {
-	paste := model.Paste{}
-	err := gr.db.Delete(&paste, "id = ?", pasteId).Error
+func (gr *GormRepository) Delete(pId string) (*model.Paste, error) {
+	p := model.Paste{}
+	err := gr.db.Delete(&p, "id = ?", pId).Error
 
-	return &paste, err
+	return &p, err
 }
 
-func (gr *GormRepository) Get(pasteId string) (*model.Paste, error) {
-	paste := model.Paste{}
-	err := gr.db.First(&paste, "id  = ?", pasteId).Error
+func (gr *GormRepository) Get(pId string) (*model.Paste, error) {
+	p := model.Paste{}
+	err := gr.db.First(&p, "id  = ?", pId).Error
 
-	return &paste, err
+	return &p, err
 }
 
 func (gr *GormRepository) Update(pasteId string, paste *model.Paste) error {
