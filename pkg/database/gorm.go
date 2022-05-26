@@ -13,6 +13,7 @@ func NewGormDB(cfg *config.Config) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s", cfg.DBConfig.User, cfg.DBConfig.Password, cfg.DBConfig.Host, cfg.DBConfig.Port,
 		cfg.DBConfig.Database)
 
+	// Changes in the Config might increase performance?
 	db, err := gorm.Open(driver(dsn), &gorm.Config{})
 	if err != nil {
 		return nil, err

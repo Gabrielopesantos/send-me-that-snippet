@@ -8,16 +8,15 @@ import (
 	utls "github.com/gabrielopesantos/smts/pkg/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
-	"gorm.io/gorm"
 )
 
 type pasteHandlers struct {
-	dbConn *gorm.DB
+	dbConn Repository
 	logger *logger.Logger
 	cfg    *config.Config
 }
 
-func NewHandlers(dbConn *gorm.DB, logger *logger.Logger, cfg *config.Config) *pasteHandlers {
+func NewHandlers(dbConn Repository, logger *logger.Logger, cfg *config.Config) *pasteHandlers {
 	return &pasteHandlers{
 		cfg:    cfg,
 		logger: logger,
@@ -36,9 +35,7 @@ func (h *pasteHandlers) Filter() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
-		var results []model.Paste
-		// Breaks this functions
-		err = h.dbConn.Where(&filter, "expired").Find(&results).Error
+		results, err := h.dbConn.Filter(&filter)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Filter - %s", err.Error()), nil)
 			return ctx.SendStatus(fiber.StatusInternalServerError)
@@ -72,7 +69,7 @@ func (h *pasteHandlers) Insert() fiber.Handler {
 
 		paste.Id = utls.RandSeq(12)
 
-		err = h.dbConn.Create(&paste).Error
+		err = h.dbConn.Insert(&paste)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Insert - %s", err.Error()), nil)
 			return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to register paste")
@@ -85,8 +82,7 @@ func (h *pasteHandlers) Get() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		pId := ctx.Params("pId", "")
 
-		paste := model.Paste{}
-		err := h.dbConn.First(&paste, "id  = ?", pId).Error
+		paste, err := h.dbConn.Get(pId)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Get - %s", err.Error()), nil)
 			return ctx.Status(fiber.StatusNotFound).SendString("Not found")
@@ -100,8 +96,7 @@ func (h *pasteHandlers) Delete() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		pId := ctx.Params("pId")
 
-		paste := model.Paste{}
-		err := h.dbConn.Delete(&paste, "id = ?", pId)
+		err, paste := h.dbConn.Delete(pId)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Get - %v", err), nil)
 			return ctx.Status(fiber.StatusNotFound).SendString("Not found")
@@ -123,7 +118,7 @@ func (h *pasteHandlers) Update() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).SendString("Nothing to update")
 		}
 
-		err = h.dbConn.Where("id = ?", pId).Updates(paste).Error
+		err = h.dbConn.Update(pId, &paste)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Update - %s", err.Error()), nil)
 			return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to update item")
