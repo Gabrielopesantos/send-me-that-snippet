@@ -1,10 +1,10 @@
 CREATE TABLE "pastes" (
     "id" text NOT NULL,
-    "content" text,
-    "content_sha" text,
-    "language" text,
+    "content" text NOT NULL,
+    "content_sha" text NOT NULL,
+    "language" text NOT NULL,
     "created_at" timestamptz,
-    "expires_in" bigint,
-    "expired" boolean,
+    "expires_in" bigint NOT NULL,
+    "expired" boolean NOT NULL,
     CONSTRAINT "pastes_pkey" PRIMARY KEY ("id")
 ) WITH (oids = false);

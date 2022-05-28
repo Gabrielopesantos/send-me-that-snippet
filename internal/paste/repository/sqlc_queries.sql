@@ -1,10 +1,11 @@
 -- name: Insert :one
-INSERT INTO pastes (
-    id, content, content_sha, language, created_at, expires_in, expired
-) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *;
+INSERT INTO pastes (id, content, content_sha, language, created_at, expires_in, expired)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING *;
 
 -- name: Get :one
-SELECT * FROM pastes
+SELECT *
+FROM pastes
 WHERE id = $1;
 
 -- name: Delete :one
@@ -22,7 +23,7 @@ SET
 WHERE id = $5
 RETURNING *;
 
--- -- name: Update :one
+-- -- name: AlsoUpdate :one
 -- UPDATE pastes
 -- SET
 --     content = COALESCE(NULLIF($1,''), content),

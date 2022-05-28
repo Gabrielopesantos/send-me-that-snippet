@@ -10,10 +10,10 @@ import (
 
 type Paste struct {
 	ID         string
-	Content    sql.NullString
-	ContentSha sql.NullString
-	Language   sql.NullString
+	Content    string
+	ContentSha string
+	Language   string
 	CreatedAt  sql.NullTime
-	ExpiresIn  sql.NullInt64
-	Expired    sql.NullBool
+	ExpiresIn  int64
+	Expired    bool
 }

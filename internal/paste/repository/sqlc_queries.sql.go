@@ -32,7 +32,8 @@ func (q *Queries) Delete(ctx context.Context, id string) (Paste, error) {
 }
 
 const get = `-- name: Get :one
-SELECT id, content, content_sha, language, created_at, expires_in, expired FROM pastes
+SELECT id, content, content_sha, language, created_at, expires_in, expired
+FROM pastes
 WHERE id = $1
 `
 
@@ -52,19 +53,19 @@ func (q *Queries) Get(ctx context.Context, id string) (Paste, error) {
 }
 
 const insert = `-- name: Insert :one
-INSERT INTO pastes (
-    id, content, content_sha, language, created_at, expires_in, expired
-) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, content, content_sha, language, created_at, expires_in, expired
+INSERT INTO pastes (id, content, content_sha, language, created_at, expires_in, expired)
+VALUES ($1, $2, $3, $4, $5, $6, $7)
+RETURNING id, content, content_sha, language, created_at, expires_in, expired
 `
 
 type InsertParams struct {
 	ID         string
-	Content    sql.NullString
-	ContentSha sql.NullString
-	Language   sql.NullString
+	Content    string
+	ContentSha string
+	Language   string
 	CreatedAt  sql.NullTime
-	ExpiresIn  sql.NullInt64
-	Expired    sql.NullBool
+	ExpiresIn  int64
+	Expired    bool
 }
 
 func (q *Queries) Insert(ctx context.Context, arg InsertParams) (Paste, error) {
@@ -102,10 +103,10 @@ RETURNING id, content, content_sha, language, created_at, expires_in, expired
 `
 
 type UpdateParams struct {
-	Content    sql.NullString
-	ContentSha sql.NullString
-	Language   sql.NullString
-	Expired    sql.NullBool
+	Content    string
+	ContentSha string
+	Language   string
+	Expired    bool
 	ID         string
 }
 
