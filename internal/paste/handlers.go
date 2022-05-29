@@ -8,6 +8,7 @@ import (
 	utls "github.com/gabrielopesantos/smts/pkg/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
+	"go.opentelemetry.io/otel"
 )
 
 type pasteHandlers struct {
@@ -26,6 +27,8 @@ func NewHandlers(dbConn Repository, logger *logger.Logger, cfg *config.Config) *
 
 func (h *pasteHandlers) Filter() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		c, span := otel.Tracer("main-service").Start(ctx.Context(), "Filter.Handler")
+		defer span.End()
 
 		filter := model.Paste{}
 		err := ctx.QueryParser(&filter)
@@ -35,7 +38,7 @@ func (h *pasteHandlers) Filter() fiber.Handler {
 			return ctx.SendStatus(fiber.StatusBadRequest)
 		}
 
-		results, err := h.dbConn.Filter(&filter)
+		results, err := h.dbConn.Filter(c, &filter)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Filter - %s", err.Error()), nil)
 			return ctx.SendStatus(fiber.StatusInternalServerError)
@@ -52,6 +55,9 @@ func (h *pasteHandlers) Filter() fiber.Handler {
 
 func (h *pasteHandlers) Insert() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		c, span := otel.Tracer("main-service").Start(ctx.Context(), "Insert.Handler")
+		defer span.End()
+
 		var err error
 		val := validator.New()
 		paste := model.Paste{}
@@ -69,7 +75,7 @@ func (h *pasteHandlers) Insert() fiber.Handler {
 
 		paste.Id = utls.RandSeq(12)
 
-		err = h.dbConn.Insert(&paste)
+		err = h.dbConn.Insert(c, &paste)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Insert - %s", err.Error()), nil)
 			return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to register paste")
@@ -80,9 +86,12 @@ func (h *pasteHandlers) Insert() fiber.Handler {
 }
 func (h *pasteHandlers) Get() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		c, span := otel.Tracer("main-service").Start(ctx.Context(), "Get.Handler")
+		defer span.End()
+
 		pId := ctx.Params("pId", "")
 
-		paste, err := h.dbConn.Get(pId)
+		paste, err := h.dbConn.Get(c, pId)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Get - %s", err.Error()), nil)
 			return ctx.Status(fiber.StatusNotFound).SendString("Not found")
@@ -94,9 +103,12 @@ func (h *pasteHandlers) Get() fiber.Handler {
 
 func (h *pasteHandlers) Delete() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		c, span := otel.Tracer("main-service").Start(ctx.Context(), "Delete.Handler")
+		defer span.End()
+
 		pId := ctx.Params("pId")
 
-		paste, err := h.dbConn.Delete(pId)
+		paste, err := h.dbConn.Delete(c, pId)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Get - %v", err), nil)
 			return ctx.Status(fiber.StatusNotFound).SendString("Not found")
@@ -108,6 +120,9 @@ func (h *pasteHandlers) Delete() fiber.Handler {
 
 func (h *pasteHandlers) Update() fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
+		c, span := otel.Tracer("main-service").Start(ctx.Context(), "Update.Handler")
+		defer span.End()
+
 		pId := ctx.Params("pId")
 
 		paste := model.Paste{}
@@ -118,7 +133,7 @@ func (h *pasteHandlers) Update() fiber.Handler {
 			return ctx.Status(fiber.StatusBadRequest).SendString("Nothing to update")
 		}
 
-		err = h.dbConn.Update(pId, &paste)
+		err = h.dbConn.Update(c, pId, &paste)
 		if err != nil {
 			h.logger.Error(fmt.Sprintf("Update - %s", err.Error()), nil)
 			return ctx.Status(fiber.StatusInternalServerError).SendString("Failed to update item")

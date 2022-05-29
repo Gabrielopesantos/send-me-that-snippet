@@ -1,0 +1,29 @@
+# https://opentelemetry.io/docs/collector/configuration
+# https://github.com/open-telemetry/opentelemetry-go/blob/main/example/otel-collector/k8s/otel-collector.yaml
+# https://github.com/eqfarhad/distributed_tracing/blob/main/k8s/all-in-one.yaml
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: "0.0.0.0:4317"
+
+processors:
+  batch:
+
+extensions:
+  health_check: {}
+
+exporters:
+  jaeger:
+    endpoint: "jaeger:14250"
+    tls:
+      insecure: true
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [jaeger]
